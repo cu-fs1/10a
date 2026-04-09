@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import type { FieldErrors, UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
 import type { TodoFormValues } from "./schema";
 
@@ -10,9 +11,16 @@ interface TodoFormProps {
   handleSubmit: UseFormHandleSubmit<TodoFormValues>;
   errors: FieldErrors<TodoFormValues>;
   onSubmit: (data: TodoFormValues) => void;
+  submitting?: boolean;
 }
 
-export function TodoForm({ register, handleSubmit, errors, onSubmit }: TodoFormProps) {
+export function TodoForm({
+  register,
+  handleSubmit,
+  errors,
+  onSubmit,
+  submitting,
+}: TodoFormProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -30,6 +38,7 @@ export function TodoForm({ register, handleSubmit, errors, onSubmit }: TodoFormP
                 placeholder="What needs to be done?"
                 aria-invalid={!!errors.task}
                 aria-describedby={errors.task ? "task-error" : undefined}
+                disabled={submitting}
                 {...register("task")}
               />
               {errors.task && (
@@ -38,7 +47,13 @@ export function TodoForm({ register, handleSubmit, errors, onSubmit }: TodoFormP
                 </p>
               )}
             </div>
-            <Button type="submit">Add</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? (
+                <Spinner className="size-3.5 text-current" />
+              ) : (
+                "Add"
+              )}
+            </Button>
           </div>
         </form>
       </CardContent>
