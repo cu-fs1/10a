@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
@@ -16,10 +17,12 @@ export function TodoApp() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/todos")
-      .then((r) => r.json())
-      .then((data: Array<Todo & { createdAt: string }>) =>
-        setTodos(data.map((t) => ({ ...t, createdAt: new Date(t.createdAt) }))),
+    axios
+      .get<Array<Todo & { createdAt: string }>>("/api/todos")
+      .then((res) =>
+        setTodos(
+          res.data.map((t) => ({ ...t, createdAt: new Date(t.createdAt) })),
+        ),
       )
       .finally(() => setLoading(false));
   }, []);
@@ -37,47 +40,45 @@ export function TodoApp() {
   async function onSubmit(data: TodoFormValues) {
     setSubmitting(true);
     try {
-      const res = await fetch("/api/todos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task: data.task.trim() }),
-      });
-      if (res.ok) {
-        const newTodo: Todo & { createdAt: string } = await res.json();
-        setTodos((prev) => [
-          { ...newTodo, createdAt: new Date(newTodo.createdAt) },
-          ...prev,
-        ]);
-        reset();
-      }
+      const res = await axios.post<Todo & { createdAt: string }>(
+        "/api/todos",
+        { task: data.task.trim() },
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+      const newTodo = res.data;
+      setTodos((prev) => [
+        { ...newTodo, createdAt: new Date(newTodo.createdAt) },
+        ...prev,
+      ]);
+      reset();
     } finally {
       setSubmitting(false);
     }
   }
 
   async function toggleTodo(id: string) {
-    const res = await fetch(`/api/todos/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    if (res.ok) {
-      const updated: Todo & { createdAt: string } = await res.json();
-      setTodos((prev) =>
-        prev.map((t) =>
-          t.id === id
-            ? { ...updated, createdAt: new Date(updated.createdAt) }
-            : t,
-        ),
-      );
-    }
+    const res = await axios.patch<Todo & { createdAt: string }>(
+      `/api/todos/${id}`,
+      {},
+      {
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+    const updated = res.data;
+    setTodos((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? { ...updated, createdAt: new Date(updated.createdAt) }
+          : t,
+      ),
+    );
   }
 
   async function deleteTodo(id: string) {
-    const res = await fetch(`/api/todos/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setTodos((prev) => prev.filter((t) => t.id !== id));
-    }
+    await axios.delete(`/api/todos/${id}`);
+    setTodos((prev) => prev.filter((t) => t.id !== id));
   }
 
   const activeTodos = todos.filter((t) => !t.completed);
